@@ -1,3 +1,6 @@
+process.on("uncaughtException", function (err) {
+    console.log("Error capturado:", err);
+});
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const express = require("express");
 const qrcode = require("qrcode-terminal");
@@ -28,7 +31,10 @@ client.on("ready", () => {
 });
 
 client.initialize();
-
+client.on("disconnected", () => {
+    console.log("Reconectando WhatsApp...");
+    client.initialize();
+});
 app.listen(3000, () => {
     console.log("Servidor iniciado 🚀");
 });
