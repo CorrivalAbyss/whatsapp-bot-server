@@ -1,40 +1,34 @@
-process.on("uncaughtException", function (err) {
-    console.log("Error capturado:", err);
-});
-const { Client, LocalAuth } = require("whatsapp-web.js");
 const express = require("express");
-const qrcode = require("qrcode-terminal");
+const cors = require("cors");
+const { Client, LocalAuth } = require("whatsapp-web.js");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--single-process"
-        ]
+        executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
-});
-
-client.on("qr", qr => {
-    console.log("Escanea este QR 👇");
-    qrcode.generate(qr, { small: true });
 });
 
 client.on("ready", () => {
     console.log("WhatsApp conectado ✅");
 });
 
-client.initialize();
-client.on("disconnected", () => {
-    console.log("Reconectando WhatsApp...");
-    client.initialize();
+client.on("auth_failure", msg => {
+    console.error("Error de autenticación:", msg);
 });
-app.listen(3000, () => {
-    console.log("Servidor iniciado 🚀");
+
+client.initialize();
+
+app.get("/status", (req, res) => {
+    res.json({ status: client.info ? "connected" : "disconnected" });
+});
+
+app.listen(process.env.PORT || 3000, () => {
+    console.log(`Servidor iniciado en puerto ${process.env.PORT || 3000} 🚀`);
 });
